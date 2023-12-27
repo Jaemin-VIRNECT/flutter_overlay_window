@@ -27,8 +27,8 @@ import androidx.core.app.NotificationCompat;
 
 import com.example.flutter_overlay_window.R;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.flutter.embedding.android.FlutterTextureView;
 import io.flutter.embedding.android.FlutterView;
@@ -174,16 +174,12 @@ public class OverlayService extends Service {
             params.height = height;
             params.gravity = Gravity.LEFT | Gravity.TOP;
             windowManager.updateViewLayout(flutterView, params);
-            JSONObject displayInfo = new JSONObject();
-            try {
-                displayInfo.put("type", "overlayDisplayInfo");
-                displayInfo.put("isLandscape", isLandscape);
-                displayInfo.put("width", width);
-                displayInfo.put("height", height);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            WindowSetup.messenger.send(displayInfo.toString());
+            Map<String, Object> message = new HashMap<>(1);
+            message.put("type", "overlayDisplayInfo");
+            message.put("isLandscape", isLandscape);
+            message.put("width", width);
+            message.put("height", height);
+            WindowSetup.messenger.send(message);
         });
 
         params.gravity = Gravity.LEFT | Gravity.TOP;
