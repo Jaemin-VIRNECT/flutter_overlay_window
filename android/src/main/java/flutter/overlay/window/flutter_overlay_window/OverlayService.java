@@ -3,14 +3,13 @@ package flutter.overlay.window.flutter_overlay_window;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
-import android.app.PendingIntent;
 import android.graphics.Point;
 import android.os.Build;
 import android.os.Handler;
@@ -18,9 +17,11 @@ import android.os.IBinder;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
-import android.view.Display;
+import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 
 import androidx.annotation.Nullable;
@@ -41,11 +42,6 @@ import io.flutter.plugin.common.JSONMessageCodec;
 import io.flutter.plugin.common.MethodChannel;
 
 public class OverlayService extends Service implements View.OnTouchListener {
-    private final int DEFAULT_NAV_BAR_HEIGHT_DP = 48;
-    private final int DEFAULT_STATUS_BAR_HEIGHT_DP = 25;
-
-    private Integer mStatusBarHeight = -1;
-    private Integer mNavigationBarHeight = -1;
     private Resources mResources;
 
     public static final String INTENT_EXTRA_IS_CLOSE_WINDOW = "IsCloseWindow";
@@ -65,6 +61,14 @@ public class OverlayService extends Service implements View.OnTouchListener {
     private Point szWindow = new Point();
     private Timer mTrayAnimationTimer;
     private TrayAnimationTimerTask mTrayTimerTask;
+    private int initialWidth = 0;
+    private int initialHeight = 0;
+    private boolean initialOrientationIsLandscape = false;
+
+    private int mCurrentWidth = 0;
+    private int mCurrentHeight = 0;
+    private boolean mIsLandscape = false;
+    private int mCurrentRotation = 0;
 
     @Nullable
     @Override
@@ -112,6 +116,7 @@ public class OverlayService extends Service implements View.OnTouchListener {
         flutterView.setFocusable(true);
         flutterView.setFocusableInTouchMode(true);
         flutterView.setBackgroundColor(Color.TRANSPARENT);
+
         flutterChannel.setMethodCallHandler((call, result) -> {
             if (call.method.equals("updateFlag")) {
                 String flag = call.argument("flag").toString();
@@ -122,6 +127,7 @@ public class OverlayService extends Service implements View.OnTouchListener {
                 resizeOverlay(width, height, result);
             }
         });
+
         overlayMessageChannel.setMessageHandler((message, reply) -> {
             WindowSetup.messenger.send(message);
         });
@@ -137,66 +143,71 @@ public class OverlayService extends Service implements View.OnTouchListener {
             szWindow.set(w, h);
         }
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowSetup.width == -1999 ? -1 : WindowSetup.width,
-                WindowSetup.height != -1999 ? WindowSetup.height : screenHeight(),
-                0,
-                -statusBarHeightPx(),
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY : WindowManager.LayoutParams.TYPE_PHONE,
-                WindowSetup.flag | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowSetup.flag | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                        | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
+                        | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
                         | WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR
-                        | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
-                PixelFormat.TRANSLUCENT
+                        | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                        | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                PixelFormat.TRANSPARENT
         );
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && WindowSetup.flag == clickableFlag) {
             params.alpha = MAXIMUM_OPACITY_ALLOWED_FOR_S_AND_HIGHER;
         }
         params.gravity = WindowSetup.gravity;
+        flutterView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+        flutterView.addOnLayoutChangeListener((view, newX, newY, newWidth, newHeight, oldX, oldY, oldWidth, oldHeight) -> {
+            WindowManager windowService = (WindowManager) getSystemService(WINDOW_SERVICE);
+            int currentRotation = windowService.getDefaultDisplay().getRotation();
+            boolean isLandscape = false;
+            if (Surface.ROTATION_0 == currentRotation) {
+                isLandscape = false;
+            } else if (Surface.ROTATION_180 == currentRotation) {
+                isLandscape = false;
+            } else if (Surface.ROTATION_90 == currentRotation) {
+                isLandscape = true;
+            } else if (Surface.ROTATION_270 == currentRotation) {
+                isLandscape = true;
+            }
+
+            if (oldWidth == 0 && oldHeight == 0) {
+                initialWidth = newWidth;
+                initialHeight = newHeight;
+                initialOrientationIsLandscape = isLandscape;
+            }
+
+            mCurrentWidth = newWidth;
+            mCurrentHeight = newHeight;
+            mIsLandscape = isLandscape;
+            mCurrentRotation = currentRotation;
+
+            int width = isLandscape ? Math.max(initialHeight, initialWidth) : Math.min(
+                    initialHeight,
+                    initialWidth
+            );
+            int height = isLandscape ? Math.min(initialHeight, initialWidth) : Math.max(
+                    initialHeight,
+                    initialWidth
+            );
+
+            params.width = width;
+            params.height = height;
+            params.gravity = Gravity.LEFT | Gravity.TOP;
+            windowManager.updateViewLayout(flutterView, params);
+            String resultString = isLandscape + "|" + width + "|" + height;
+            overlayMessageChannel.setMessageHandler((message, reply) -> {
+                WindowSetup.messenger.send(resultString);
+            });
+        });
+
+        params.gravity = Gravity.LEFT | Gravity.TOP;
         flutterView.setOnTouchListener(this);
         windowManager.addView(flutterView, params);
         return START_STICKY;
     }
-
-
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
-    private int screenHeight() {
-        Display display = windowManager.getDefaultDisplay();
-        DisplayMetrics dm = new DisplayMetrics();
-        display.getRealMetrics(dm);
-        return inPortrait() ?
-                dm.heightPixels + statusBarHeightPx() + navigationBarHeightPx()
-                :
-                dm.heightPixels + statusBarHeightPx();
-    }
-
-    private int statusBarHeightPx() {
-        if (mStatusBarHeight == -1) {
-            int statusBarHeightId = mResources.getIdentifier("status_bar_height", "dimen", "android");
-
-            if (statusBarHeightId > 0) {
-                mStatusBarHeight = mResources.getDimensionPixelSize(statusBarHeightId);
-            } else {
-                mStatusBarHeight = dpToPx(DEFAULT_STATUS_BAR_HEIGHT_DP);
-            }
-        }
-
-        return mStatusBarHeight;
-    }
-
-    int navigationBarHeightPx() {
-        if (mNavigationBarHeight == -1) {
-            int navBarHeightId = mResources.getIdentifier("navigation_bar_height", "dimen", "android");
-
-            if (navBarHeightId > 0) {
-                mNavigationBarHeight = mResources.getDimensionPixelSize(navBarHeightId);
-            } else {
-                mNavigationBarHeight = dpToPx(DEFAULT_NAV_BAR_HEIGHT_DP);
-            }
-        }
-
-        return mNavigationBarHeight;
-    }
-
 
     private void updateOverlayFlag(MethodChannel.Result result, String flag) {
         if (windowManager != null) {
@@ -273,10 +284,6 @@ public class OverlayService extends Service implements View.OnTouchListener {
     private int dpToPx(int dp) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
                 Float.parseFloat(dp + ""), mResources.getDisplayMetrics());
-    }
-
-    private boolean inPortrait() {
-        return mResources.getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
     }
 
     @Override
