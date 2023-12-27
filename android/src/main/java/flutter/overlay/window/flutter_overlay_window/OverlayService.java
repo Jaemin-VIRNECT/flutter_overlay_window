@@ -140,46 +140,46 @@ public class OverlayService extends Service{
         }
         params.gravity = WindowSetup.gravity;
         flutterView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-//        flutterView.addOnLayoutChangeListener((view, newX, newY, newWidth, newHeight, oldX, oldY, oldWidth, oldHeight) -> {
-//            WindowManager windowService = (WindowManager) getSystemService(WINDOW_SERVICE);
-//            int currentRotation = windowService.getDefaultDisplay().getRotation();
-//            boolean isLandscape = false;
-//            if (Surface.ROTATION_0 == currentRotation) {
-//                isLandscape = false;
-//            } else if (Surface.ROTATION_180 == currentRotation) {
-//                isLandscape = false;
-//            } else if (Surface.ROTATION_90 == currentRotation) {
-//                isLandscape = true;
-//            } else if (Surface.ROTATION_270 == currentRotation) {
-//                isLandscape = true;
-//            }
-//
-//            if (oldWidth == 0 && oldHeight == 0) {
-//                initialWidth = newWidth;
-//                initialHeight = newHeight;
-//                initialOrientationIsLandscape = isLandscape;
-//            }
-//
-//            mCurrentWidth = newWidth;
-//            mCurrentHeight = newHeight;
-//            mIsLandscape = isLandscape;
-//            mCurrentRotation = currentRotation;
-//
-//            int width = isLandscape ? Math.max(initialHeight, initialWidth) : Math.min(
-//                    initialHeight,
-//                    initialWidth
-//            );
-//            int height = isLandscape ? Math.min(initialHeight, initialWidth) : Math.max(
-//                    initialHeight,
-//                    initialWidth
-//            );
-//
-//            params.width = width;
-//            params.height = height;
-//            params.gravity = Gravity.LEFT | Gravity.TOP;
-//            windowManager.updateViewLayout(flutterView, params);
-//            String resultString = isLandscape + "|" + width + "|" + height;
-//        });
+        flutterView.addOnLayoutChangeListener((view, newX, newY, newWidth, newHeight, oldX, oldY, oldWidth, oldHeight) -> {
+            WindowManager windowService = (WindowManager) getSystemService(WINDOW_SERVICE);
+            int currentRotation = windowService.getDefaultDisplay().getRotation();
+            boolean isLandscape = false;
+            if (Surface.ROTATION_0 == currentRotation) {
+                isLandscape = false;
+            } else if (Surface.ROTATION_180 == currentRotation) {
+                isLandscape = false;
+            } else if (Surface.ROTATION_90 == currentRotation) {
+                isLandscape = true;
+            } else if (Surface.ROTATION_270 == currentRotation) {
+                isLandscape = true;
+            }
+
+            if (oldWidth == 0 && oldHeight == 0) {
+                initialWidth = newWidth;
+                initialHeight = newHeight;
+                initialOrientationIsLandscape = isLandscape;
+            }
+
+            mCurrentWidth = newWidth;
+            mCurrentHeight = newHeight;
+            mIsLandscape = isLandscape;
+            mCurrentRotation = currentRotation;
+
+            int width = isLandscape ? Math.max(initialHeight, initialWidth) : Math.min(
+                    initialHeight,
+                    initialWidth
+            );
+            int height = isLandscape ? Math.min(initialHeight, initialWidth) : Math.max(
+                    initialHeight,
+                    initialWidth
+            );
+
+            params.width = width;
+            params.height = height;
+            params.gravity = Gravity.LEFT | Gravity.TOP;
+            windowManager.updateViewLayout(flutterView, params);
+            //String resultString = isLandscape + "|" + width + "|" + height;
+        });
 
         params.gravity = Gravity.LEFT | Gravity.TOP;
         windowManager.addView(flutterView, params);
