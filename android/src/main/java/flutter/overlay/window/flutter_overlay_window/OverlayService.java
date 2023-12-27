@@ -12,13 +12,10 @@ import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.os.Build;
-import android.os.Handler;
 import android.os.IBinder;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,8 +27,8 @@ import androidx.core.app.NotificationCompat;
 
 import com.example.flutter_overlay_window.R;
 
-import java.util.Timer;
-import java.util.TimerTask;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import io.flutter.embedding.android.FlutterTextureView;
 import io.flutter.embedding.android.FlutterView;
@@ -39,9 +36,8 @@ import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.FlutterEngineCache;
 import io.flutter.plugin.common.BasicMessageChannel;
 import io.flutter.plugin.common.JSONMessageCodec;
-import io.flutter.plugin.common.MethodChannel;
 
-public class OverlayService extends Service{
+public class OverlayService extends Service {
     private Resources mResources;
 
     public static final String INTENT_EXTRA_IS_CLOSE_WINDOW = "IsCloseWindow";
@@ -178,9 +174,16 @@ public class OverlayService extends Service{
             params.height = height;
             params.gravity = Gravity.LEFT | Gravity.TOP;
             windowManager.updateViewLayout(flutterView, params);
-            String displayInfo = isLandscape + "|" + width + "|" + height;
-            System.out.println("##########################displayInfo :: " + displayInfo);
-            WindowSetup.messenger.send(displayInfo);
+            JSONObject displayInfo = new JSONObject();
+            try {
+                displayInfo.put("type", "overlayDisplayInfo");
+                displayInfo.put("isLandscape", isLandscape);
+                displayInfo.put("width", width);
+                displayInfo.put("height", height);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            WindowSetup.messenger.send(displayInfo.toString());
         });
 
         params.gravity = Gravity.LEFT | Gravity.TOP;
