@@ -178,7 +178,8 @@ public class OverlayService extends Service{
             params.height = height;
             params.gravity = Gravity.LEFT | Gravity.TOP;
             windowManager.updateViewLayout(flutterView, params);
-            //String resultString = isLandscape + "|" + width + "|" + height;
+            String displayInfo = isLandscape + "|" + width + "|" + height;
+            WindowSetup.messenger.send(displayInfo);
         });
 
         params.gravity = Gravity.LEFT | Gravity.TOP;
