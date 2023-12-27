@@ -6,7 +6,7 @@ import 'package:flutter_overlay_window/src/overlay_config.dart';
 
 class FlutterOverlayWindow {
   FlutterOverlayWindow._();
-
+  static Stream<dynamic>? _broadcastStream;
   static final StreamController _controller = StreamController();
   static const MethodChannel _channel =
       MethodChannel("x-slayer/overlay_channel");
@@ -92,7 +92,8 @@ class FlutterOverlayWindow {
       _controller.add(message);
       return message;
     });
-    return _controller.stream.asBroadcastStream();
+    _broadcastStream ??= _controller.stream.asBroadcastStream();
+    return _broadcastStream!;
   }
 
   /// Update the overlay flag while the overlay in action
@@ -123,5 +124,6 @@ class FlutterOverlayWindow {
   /// Dispose overlay stream
   static void disposeOverlayListener() {
     _controller.close();
+    _broadcastStream = null;
   }
 }
