@@ -92,7 +92,7 @@ class FlutterOverlayWindow {
       _controller.add(message);
       return message;
     });
-    return _controller.stream;
+    return _controller.stream.asBroadcastStream();
   }
 
   /// Update the overlay flag while the overlay in action
