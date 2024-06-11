@@ -112,7 +112,7 @@ public class OverlayService extends Service {
         flutterView.setFitsSystemWindows(true);
         flutterView.setFocusable(true);
         flutterView.setFocusableInTouchMode(true);
-        flutterView.setBackgroundColor(Color.Yellow);
+        flutterView.setBackgroundColor(Color.TRANSPARENT);
 
         overlayMessageChannel.setMessageHandler((message, reply) -> {
             WindowSetup.messenger.send(message);
