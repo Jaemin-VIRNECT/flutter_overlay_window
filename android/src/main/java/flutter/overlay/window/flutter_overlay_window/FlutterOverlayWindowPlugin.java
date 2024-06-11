@@ -87,10 +87,6 @@ public class FlutterOverlayWindowPlugin implements
             String notificationVisibility = call.argument("notificationVisibility");
             boolean enableDrag = call.argument("enableDrag");
             String positionGravity = call.argument("positionGravity");
-            Map<String, Integer> startPosition = call.argument("startPosition");
-            int startX = startPosition != null ? startPosition.getOrDefault("x", OverlayConstants.DEFAULT_XY) : OverlayConstants.DEFAULT_XY;
-            int startY = startPosition != null ? startPosition.getOrDefault("y", OverlayConstants.DEFAULT_XY) : OverlayConstants.DEFAULT_XY;
-
 
             WindowSetup.width = width != null ? width : -1;
             WindowSetup.height = height != null ? height : -1;
@@ -105,8 +101,6 @@ public class FlutterOverlayWindowPlugin implements
             final Intent intent = new Intent(context, OverlayService.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            intent.putExtra("startX", startX);
-            intent.putExtra("startY", startY);
             context.startService(intent);
             result.success(null);
         } else if (call.method.equals("isOverlayActive")) {
@@ -115,12 +109,6 @@ public class FlutterOverlayWindowPlugin implements
         } else if (call.method.equals("isOverlayActive")) {
             result.success(OverlayService.isRunning);
             return;
-        } else if (call.method.equals("moveOverlay")) {
-            int x = call.argument("x");
-            int y = call.argument("y");
-            result.success(OverlayService.moveOverlay(x, y));
-        } else if (call.method.equals("getOverlayPosition")) {
-            result.success(OverlayService.getCurrentPosition());
         } else if (call.method.equals("closeOverlay")) {
             if (OverlayService.isRunning) {
                 final Intent i = new Intent(context, OverlayService.class);
