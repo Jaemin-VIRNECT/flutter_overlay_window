@@ -87,7 +87,6 @@ public class FlutterOverlayWindowPlugin implements
             String notificationVisibility = call.argument("notificationVisibility");
             boolean enableDrag = call.argument("enableDrag");
             String positionGravity = call.argument("positionGravity");
-
             WindowSetup.width = width != null ? width : -1;
             WindowSetup.height = height != null ? height : -1;
             WindowSetup.enableDrag = enableDrag;
